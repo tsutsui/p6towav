@@ -11,8 +11,14 @@
 #define BIT0_FREQ TAPE_BAUD
 #define BIT1_FREQ (TAPE_BAUD * 2)
 
-#define LONG_HEADER_SEC 2.0
-#define SHORT_HEADER_SEC 0.5
+#if (SAMPLE_RATE % (TAPE_BAUD * 2)) != 0
+#error SAMPLE_RATE should be multiple of TAPE_BAUD * 2 
+#endif
+
+#define BIT_SAMPLES (SAMPLE_RATE / TAPE_BAUD)
+
+#define LONG_HEADER_MSEC 2000
+#define SHORT_HEADER_MSEC 500
 
 #define BASIC_HEADER_SIZE 16
 #define BASIC_HEADER_BIN 0xd3
@@ -71,10 +77,9 @@ write_wav_header(FILE *f, uint32_t sample_count)
 
 /* 矩形波の出力（8bit PCM） */
 static void
-write_square_wave(FILE *f, double freq, double sec)
+write_square_wave(FILE *f, uint32_t freq, int total_samples)
 {
-    int samples_per_half = (int)(SAMPLE_RATE / (freq * 2));
-    int total_samples = (int)(SAMPLE_RATE * sec);
+    int samples_per_half = SAMPLE_RATE / (freq * 2);
     uint8_t value = 0xFF;
 
     for (int i = 0, count = 0; i < total_samples; i++) {
@@ -91,8 +96,7 @@ static void
 write_bit(FILE *f, int bit)
 {
     double freq = bit ? BIT1_FREQ : BIT0_FREQ;
-    double duration = 1.0/TAPE_BAUD;
-    write_square_wave(f, freq, duration);
+    write_square_wave(f, freq, BIT_SAMPLES);
 }
 
 /* UART バイト出力 */
@@ -115,8 +119,9 @@ write_byte(FILE *f, uint8_t byte)
 static void
 write_block(FILE *f, const uint8_t *data, size_t len, int short_header)
 {
-    double header_sec = short_header ? SHORT_HEADER_SEC : LONG_HEADER_SEC;
-    write_square_wave(f, BIT1_FREQ, header_sec);
+    uint32_t header_msec = short_header ? SHORT_HEADER_MSEC : LONG_HEADER_MSEC;
+    uint32_t header_samples = SAMPLE_RATE * header_msec / 1000;
+    write_square_wave(f, BIT1_FREQ, header_samples);
     for (int i = 0; i < len; ++i) {
         write_byte(f, data[i]);
     }
