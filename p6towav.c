@@ -111,7 +111,7 @@ write_byte(FILE *f, uint8_t byte)
     }
     /* stop bits */
     for (int i = 0; i < STOP_BITS; i++) {
-       write_bit(f, 1);
+        write_bit(f, 1);
     }
 }
 
