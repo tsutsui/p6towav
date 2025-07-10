@@ -95,7 +95,7 @@ write_square_wave(FILE *f, uint32_t freq, int total_samples)
 static void
 write_bit(FILE *f, int bit)
 {
-    double freq = bit ? BIT1_FREQ : BIT0_FREQ;
+    uint32_t freq = bit ? BIT1_FREQ : BIT0_FREQ;
     write_square_wave(f, freq, BIT_SAMPLES);
 }
 
